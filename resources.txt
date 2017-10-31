@@ -1,0 +1,14 @@
+Text Mining In R:
+https://www.jstatsoft.org/article/view/v025i05
+
+Katz's Back-off Model Wikipedia:
+https://en.wikipedia.org/wiki/Katz's_back-off_model
+
+Coursera - Columbia University - Course: Natural Language Processing: Discounting Methods - Part I:
+https://www.youtube.com/watch?v=hsHw9F3UuAQ
+
+Coursera - Columbia University - Course: Natural Language Processing: Discounting Methods - Part II:
+https://www.youtube.com/watch?v=FedWcgXcp8w
+
+Stanford Natural Language Processing Course Videos:
+https://www.youtube.com/user/OpenCourseOnline/search?query=NLP

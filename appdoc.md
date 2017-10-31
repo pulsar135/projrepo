@@ -3,6 +3,8 @@
 ## Application Overview
 This application uses the Katz Back-off (KBO) Model with discounting for quadgrams 
 to provide the top three words predicted to complete the user input phrase (ngram).
+A list of resources on KBO Model, Natural Language Processing, and Text Mining
+in R can be found on github in the [resources list][1]
 
 ## Discount values
 For the purposes of this simplified application the discount was assumed to be
@@ -22,7 +24,12 @@ highest.
 The predicition algorithm cleans the input phrase before applying the model, 
 removing profanity and english stopwords. If a "filter error" is received then
 all words in the input phrase have been filtered out.  If you wish to see the
-list of words used for these filters check: profanity or stopwords.
+list of words used for these filters check: [profanity] [2] or [stopwords] [3].
 
 ## Application Files Github Location
-https://github.com/pulsar135/ddpweek4project/tree/master/week4project
+The files for this application can be found on github [here][4]
+
+[1]: https://github.com/pulsar135/projrepo/blob/master/profanity.txt "resources list"
+[2]: https://github.com/pulsar135/projrepo/blob/master/profanity.txt "profanity"
+[3]: https://github.com/pulsar135/projrepo/blob/master/stopwords.txt "stopwords"
+[4]: https://github.com/pulsar135/projrepo/blob/master/stopwords.txt "here"
