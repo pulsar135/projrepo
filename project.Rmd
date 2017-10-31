@@ -1,0 +1,315 @@
+---
+title: "Data Science Capstone Project Milestone Report"
+date: "October 16, 2017"
+output: html_document
+---
+
+## Summary
+This report will go over the download of the project dataset, along with reading
+the dataset into R. It will then look at some general file information for the
+dataset files. The dataset will then be sampled to create a subset of the source
+dataset to be cleaned and used for exploratory analysis.
+
+## Setup
+1. The required libraries for this analysis are:
+      - ggplot2
+      - Rweka
+      - SnowballC
+      - stringi
+            
+2. The homedir parameter is the current working directory
+
+```{r setup, include=FALSE, results = "hide", message = FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+
+library('stringi')
+library('tm')
+library('SnowballC')
+library('RWeka')
+library('ggplot2')
+library('caret')
+
+homedir <- getwd()
+```
+
+## Download Dataset
+Download project dataset from weblink provided in course instructions
+```{r download, eval = FALSE}
+url <- "https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip"
+filename <- "swiftkey.zip"
+download.file(url, destfile = filename)
+unzip(filename, exdir = homedir)
+```
+
+## Source Dataset
+
+### Read and Summarize Dataset
+- Read the source dataset text files (blogs, news and twitter) into R for further
+examination.
+- Provide some general summary information on the files from the source dataset to
+get an idea of size and amount of data included.  This includes file size,
+number of lines of text, and the length of the longest line of text for each of
+the dataset files.
+
+```{r readin_source, message = FALSE, warning = FALSE}
+srcdir <- paste(homedir, "/swiftkey/final/en_US", sep = "")
+blogfile <- paste(srcdir, "/en_US.blogs.txt", sep = "")
+newsfile <- paste(srcdir, "/en_US.news.txt", sep = "")
+twitterfile <- paste(srcdir, "/en_US.twitter.txt", sep = "")
+
+con <- file(blogfile, "r")
+blogs <- readLines(con, skipNul = TRUE)
+close(con)
+
+con <- file(newsfile, "r")
+news <- readLines(con, skipNul = TRUE)
+close(con)
+
+con <- file(twitterfile, "r")
+twitter <- readLines(con, skipNul = TRUE)
+close(con)
+```
+
+```{r filesummary, echo = FALSE}
+filesize <- c(file.size(blogfile)/1024^2, file.size(newsfile)/1024^2, file.size(twitterfile)/1024^2)
+textlines <- c(length(blogs), length(news), length(twitter))
+longestline <- c(max(stri_length(blogs)), max(stri_length(news)), max(stri_length(twitter)))
+filesummary <- data.frame(row.names = c("blog", "news", "twitter"), 
+                          filesize = filesize, textlines = textlines, 
+                          longestline = longestline)
+print(filesummary)
+#sum(grepl("love", twitter))/sum(grepl("hate", twitter))
+#grep("biostat", twitter, value = TRUE)
+#grep("\\bA computer once beat me at chess, but it was no match for me at 
+#     kickboxing\\b", twitter, value = TRUE)
+#which(twitter == "A computer once beat me at chess, but it was no match for me 
+#      at kickboxing")
+```
+
+## Preprocess Dataset
+Due to the size of the dataset files, particularly the blog and twitter files a
+sample of each of the dataset files is taken in order to reduce run times when
+performing analysis on the dataset. This random sample of the full dataset 
+should still yield an accurate approximation to the results that would be
+obtained from using the full dataset. The sample sizes for each file are:
+
+- blog -- 2%
+- news -- 25%
+- twitter -- 1%
+
+A summary of the counts of sample lines of text taken from the individual files,
+as well as the total number of sample lines taken from the dataset is below.
+
+```{r preprocess, message = FALSE}
+set.seed(314)
+
+corpdir <- paste(homedir, "/corpora", sep = "")
+
+blogs_sample <- sample(blogs,length(blogs)*0.0475)
+
+news_sample <- sample(news,length(news)*0.55)
+
+twitter_sample <- sample(twitter,length(twitter)*0.018)
+
+
+samcorpus <- c(blogs_sample, news_sample, twitter_sample)
+samcorpus <- sapply(samcorpus, function(row) iconv(row, "latin1", "ASCII", sub = ""))
+
+corpusfile <- paste(corpdir, "/sampletext.txt", sep = "")
+con <- file(corpusfile, "wt")
+writeLines(samcorpus, con)
+close(con)
+
+samplines <- as.matrix(c(length(blogs_sample), length(news_sample), length(twitter_sample),
+                          sum(length(blogs_sample), length(news_sample), length(twitter_sample))))
+rownames(samplines)<-c("blogs", "news", "twitter", "total")
+colnames(samplines)<-c("TextLines")
+print(samplines)
+```
+
+## Clean Data
+Utilizing the "tm" package the sample dataset is now cleaned by performing the
+following tasks:
+
+1. Removing unnecessary whitespace
+2. Transform all text to lower case
+3. Remove numbers
+4. Remove punctuations
+5. Remove stopwords (words that are so common that their information value is 
+negligible)
+6. Remove profanity (the list of words in this category was derived from a 
+source list found [here][1])
+7. More specific profanity removal related to the two most common profane terms
+
+The cleaned sample dataset is then written to a separate text file that may be
+referenced for further analysis.
+
+```{r cleandata, message = FALSE, warning = FALSE, results = "hide"}
+
+usource <- URISource(corpusfile, encoding = "UTF-8", "text")
+(samcorp <- VCorpus(usource, readerControl = list(language = "en")))
+
+samcorp <- tm_map(samcorp, content_transformer(tolower))
+samcorp <- tm_map(samcorp, removeNumbers)
+samcorp <- tm_map(samcorp, removePunctuation)
+samcorp <- tm_map(samcorp, removeWords, stopwords("english"))
+samcorp <- tm_map(samcorp, removeWords, profanity)
+samcorp <- tm_map(samcorp, content_transformer(function(x) gsub("\\S+shit\\S+", "", x)))
+samcorp <- tm_map(samcorp, content_transformer(function(x) gsub("\\S+shit", "", x)))
+samcorp <- tm_map(samcorp, content_transformer(function(x) gsub("shit\\S+", "", x)))
+samcorp <- tm_map(samcorp, content_transformer(function(x) gsub("\\S+fuck\\S+", "", x)))
+samcorp <- tm_map(samcorp, content_transformer(function(x) gsub("\\S+fuck", "", x)))
+samcorp <- tm_map(samcorp, content_transformer(function(x) gsub("fuck\\S+", "", x)))
+samcorp <- tm_map(samcorp, stripWhitespace)
+
+writeCorpus(samcorp, path = corpdir, filenames = "sampletext_clean.txt")
+```
+
+## Split Data
+Now that the sample dataset has been cleaned we further split it into a training
+(60% of the data), test (20% of the data) and validation (20% of the data) 
+dataset.  The training data will be used for exploratory analysis and to train 
+the prediction model and the test and validation data will be used to verify the
+model is working as expected.
+
+```{r split_data}
+samfile <- paste(corpdir, "/sampletext_clean.txt", sep = "")
+
+con <- file(samfile, "r")
+sampletxt <- readLines(con, skipNul = TRUE)
+close(con)
+
+textdf <- data.frame(text = sampletxt, source = c(rep("blogs",42716), rep("news",42492), rep("twitter",42482)))
+textdf$text <- as.character(textdf$text)
+textdf$source <- as.factor(textdf$source)
+
+inTrain <- createDataPartition(y = textdf$source, p = 0.60, list = FALSE)
+
+dptrain <- textdf[inTrain,]
+dptestval <- textdf[-inTrain,]
+
+inTest <- createDataPartition(y = dptestval$source, p = 0.50, list = FALSE)
+
+dptest <- dptestval[inTest,]
+dpvalid <- dptestval[-inTest,]
+
+traintxt <- dptrain[,1]
+testtxt <- dptest[,1]
+validtxt <- dpvalid[,1]
+
+trainfile <- paste(corpdir, "/train.txt", sep = "")
+con <- file(trainfile, "wt")
+writeLines(traintxt, con)
+close(con)
+
+testfile <- paste(corpdir, "/test.txt", sep = "")
+con <- file(testfile, "wt")
+writeLines(testtxt, con)
+close(con)
+
+validfile <- paste(corpdir, "/valid.txt", sep = "")
+con <- file(validfile, "wt")
+writeLines(validtxt, con)
+close(con)
+```
+
+## Exploratory Analysis
+The training dataset is analyzed for unigram, bigram and trigram term (the 
+appearance of 1 term, 2 terms and 3 terms together in a row, respectively) frequencies
+
+```{r exploratory}
+usource <- URISource(trainfile, encoding = "UTF-8", "text")
+(traincorp <- VCorpus(usource, readerControl = list(language = "en")))
+
+gram1 <- function(n) NGramTokenizer(n, Weka_control(min = 1, max = 1))
+gram2 <- function(n) NGramTokenizer(n, Weka_control(min = 2, max = 2))
+gram3 <- function(n) NGramTokenizer(n, Weka_control(min = 3, max = 3))
+gram4 <- function(n) NGramTokenizer(n, Weka_control(min = 4, max = 4))
+
+samtdm1 <- TermDocumentMatrix(traincorp, control = list(tokenize = gram1))
+samtdm2 <- TermDocumentMatrix(traincorp, control = list(tokenize = gram2))
+samtdm3 <- TermDocumentMatrix(traincorp, control = list(tokenize = gram3))
+samtdm4 <- TermDocumentMatrix(traincorp, control = list(tokenize = gram4))
+```
+
+### Unigram Term Frequencies
+Below is a bar plot showing the top 50 unigram terms found in the dataset.
+```{r plots_1gram, echo = FALSE}
+stdm1_df <- data.frame(term=rownames(as.matrix(samtdm1)), 
+                       term_freq=rowSums(as.matrix(samtdm1)), row.names=NULL)
+stdm1_df <- stdm1_df[order(stdm1_df$term_freq, decreasing = TRUE),]
+stdm1_df$term <- factor(stdm1_df$term, levels = stdm1_df$term[order(-stdm1_df$term_freq)])
+
+#p1 <- ggplot(stdm1_df[1:25,], aes(x = term, y = term_freq))
+#p1 + geom_col(fill = "blue") + coord_flip() +
+#    labs(title = "Frequency Counts for Top 25 Terms", x = "Term", 
+#         y = "Term Frequency") + 
+#    theme(plot.title = element_text(hjust = 0.5))
+
+g1 <- ggplot(stdm1_df[1:50,], aes(x = term, y = term_freq))
+g1 + geom_col(fill = "blue") + coord_flip() +
+    labs(title = "Frequency Counts for Top 50 Unigram Terms", x = "Term", 
+         y = "Term Frequency") + 
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
+### Bigram Term Frequencies
+Below is a bar plot showing the top 50 bigram terms found in the dataset.
+```{r plots_2gram, echo = FALSE}
+stdm2_df <- data.frame(term=rownames(as.matrix(samtdm2)), 
+                       term_freq=rowSums(as.matrix(samtdm2)), row.names=NULL)
+stdm2_df <- stdm2_df[order(stdm2_df$term_freq, decreasing = TRUE),]
+stdm2_df$term <- factor(stdm2_df$term, levels = stdm2_df$term[order(-stdm2_df$term_freq)])
+
+#p2 <- ggplot(stdm2_df[1:25,], aes(x = term, y = term_freq))
+#p2 + geom_col(fill = "red") + coord_flip() +
+#    labs(title = "Frequency Counts for Top 25 2gram Terms", x = "Term", 
+#         y = "Term Frequency") + 
+#    theme(plot.title = element_text(hjust = 0.5))
+
+g2 <- ggplot(stdm2_df[1:50,], aes(x = term, y = term_freq))
+g2 + geom_col(fill = "red") + coord_flip() +
+    labs(title = "Frequency Counts for Top 50 Bigram Terms", x = "Term", 
+         y = "Term Frequency") + 
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
+### Trigram Term Frequencies
+Below is a bar plot showing the top 50 trigram terms found in the dataset.
+```{r plots_3gram, echo = FALSE}
+stdm3_df <- data.frame(term=rownames(as.matrix(samtdm3)), 
+                       term_freq=rowSums(as.matrix(samtdm3)), row.names=NULL)
+stdm3_df <- stdm3_df[order(stdm3_df$term_freq, decreasing = TRUE),]
+stdm3_df$term <- factor(stdm3_df$term, levels = stdm3_df$term[order(-stdm3_df$term_freq)])
+
+#p3 <- ggplot(stdm3_df[1:25,], aes(x = term, y = term_freq))
+#p3 + geom_col(fill = "forest green") + coord_flip() +
+#    labs(title = "Frequency Counts for Top 25 3gram Terms", x = "Term", 
+#         y = "Term Frequency") + 
+#    theme(plot.title = element_text(hjust = 0.5))
+
+g3 <- ggplot(stdm3_df[1:50,], aes(x = term, y = term_freq))
+g3 + geom_col(fill = "forest green") + coord_flip() +
+    labs(title = "Frequency Counts for Top 50 Trigram Terms", x = "Term", 
+         y = "Term Frequency") + 
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
+## Observations
+1. A number of the most common trigram terms (and to a lesser extent bigram terms)
+are proper nouns or holiday related (specifically holiday names or 
+congratulatory phrases).
+2. Some terms and their pluralizations both appear (e.g. year and years, or look
+like and looks like).
+3. Frequency counts in all 3 plots show a similar pattern.  There is a sharp
+decrease in approximately the first 10 terms before frequency counts begin to
+decrease more gradually in more of a step pattern.
+
+## Next Steps
+1. Using the n-grams created from the sample dataset build a basic n-gram model
+to predict the next word in a sequence.
+2. Translate the prediction model into a shiny app that will accept a phrase as
+input and use the model to predict the next word in the sequence.
+
+
+[1]: https://www.cs.cmu.edu/~biglou/resources/bad-words.txt "here"
