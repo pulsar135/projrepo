@@ -1,4 +1,4 @@
-predictword <- function(phrase, r) {
+predictword <- function(phrase) {
       
       #Load Libraries
       library('tm')
@@ -19,38 +19,39 @@ predictword <- function(phrase, r) {
       g3 <- 0.5
       g4 <- 0.5
       
-      #Create profanity filter
-      homedir <- getwd()
-      profanityfile <- paste(homedir, "/profanity.txt", sep = "")
-      con <- file(profanityfile, "r")
-      profanity <- readLines(con, skipNul = TRUE)
-      close(con)
-      
-      #Clean the input phrase
-      phrase <- tolower(phrase)
-      phrase <- removeNumbers(phrase)
-      phrase <- gsub("won't", "will not", phrase)
-      phrase <- gsub("\\S+n't", " not", phrase)
-      phrase <- gsub("\\S+'ll", " will", phrase)
-      phrase <- gsub("\\S+'re", " are", phrase)
-      phrase <- gsub("\\S+'ve", " have", phrase)
-      phrase <- gsub("\\S+'m", " am", phrase)
-      phrase <- removeWords(phrase, stopwords("english"))
-      phrase <- removeWords(phrase, profanity)
-      phrase <- gsub("\\S+shit\\S+", "", phrase)
-      phrase <- gsub("\\S+shit", "", phrase)
-      phrase <- gsub("shit\\S+", "", phrase)
-      phrase <- gsub("\\S+fuck\\S+", "", phrase)
-      phrase <- gsub("\\S+fuck", "", phrase)
-      phrase <- gsub("fuck\\S+", "", phrase)
-      phrase <- removePunctuation(phrase)
-      #phrase <- stemDocument(phrase)
-      phrase <- stripWhitespace(phrase)
-      phrase <- str_trim(phrase)
+      ##Create profanity filter
+      #homedir <- getwd()
+      #profanityfile <- paste(homedir, "/profanity.txt", sep = "")
+      #con <- file(profanityfile, "r")
+      #profanity <- readLines(con, skipNul = TRUE)
+      #close(con)
+      # 
+      ##Clean the input phrase
+      #phrase <- tolower(phrase)
+      #phrase <- removeNumbers(phrase)
+      #phrase <- gsub("won't", "will not", phrase)
+      #phrase <- gsub("\\S+n't", " not", phrase)
+      #phrase <- gsub("\\S+'ll", " will", phrase)
+      #phrase <- gsub("\\S+'re", " are", phrase)
+      #phrase <- gsub("\\S+'ve", " have", phrase)
+      #phrase <- gsub("\\S+'m", " am", phrase)
+      #phrase <- removeWords(phrase, stopwords("english"))
+      #phrase <- removeWords(phrase, profanity)
+      #phrase <- gsub("\\S+shit\\S+", "", phrase)
+      #phrase <- gsub("\\S+shit", "", phrase)
+      #phrase <- gsub("shit\\S+", "", phrase)
+      #phrase <- gsub("\\S+fuck\\S+", "", phrase)
+      #phrase <- gsub("\\S+fuck", "", phrase)
+      #phrase <- gsub("fuck\\S+", "", phrase)
+      #phrase <- removePunctuation(phrase)
+      ##phrase <- stemDocument(phrase)
+      #phrase <- stripWhitespace(phrase)
+      #phrase <- str_trim(phrase)
       
       #If phrase cleaning removes all words throw error, ask for new input
       if (identical(phrase, "")) {
-            results <- "Clean Error"
+            results <- data.table(pred = rep("Filter Error", 3), 
+                                  prob = rep(0, 3))
       }
       
       else {

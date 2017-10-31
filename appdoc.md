@@ -27,9 +27,9 @@ all words in the input phrase have been filtered out.  If you wish to see the
 list of words used for these filters check: [profanity] [2] or [stopwords] [3].
 
 ## Application Files Github Location
-The files for this application can be found on github [here][4]
+The files for this application can be found on github [here] [4]
 
-[1]: https://github.com/pulsar135/projrepo/blob/master/profanity.txt "resources list"
+[1]: https://github.com/pulsar135/projrepo/blob/master/resources.txt "resources list"
 [2]: https://github.com/pulsar135/projrepo/blob/master/profanity.txt "profanity"
 [3]: https://github.com/pulsar135/projrepo/blob/master/stopwords.txt "stopwords"
-[4]: https://github.com/pulsar135/projrepo/blob/master/stopwords.txt "here"
+[4]: https://github.com/pulsar135/projrepo "here"
