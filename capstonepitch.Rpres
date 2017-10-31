@@ -1,0 +1,76 @@
+Data Science Capstone Project: NLP Ngram Prediction Application
+========================================================
+author: Ben H.
+date: 10/31/2017
+autosize: true
+transition: rotate
+
+Capstone Project Overview
+========================================================
+<font size = "5">
+
+1. Use R Software's text mining and natural language processing capabilities to:
+      - Mine a set of provided source text documents
+      - Create a predictive text model
+
+2. Create a shiny app data product that uses the predictive text model to 
+predict next words
+
+3. Create an R Presentation to pitch your predictive text application
+
+</font>
+
+Predictive Text Model: Building Text Library
+========================================================
+<font size = "5">
+
+Process for Text Library Construction:
+
+1. Sample provided source text files. Due to the size of the source text files
+analyzing the full source files is not feasible for this application.
+2. Utilize R 'tm' package to:
+      - Clean sampled text of numbers, punctuations, profanity, stopwords, etc. 
+      and save as a new file that includes only the desired text to be used for 
+      the predictive model.
+      - Create a separate ngram library for unigrams, bigrams, trigrams, and 
+      quadgrams included in the sampled text. These libraries will form the 
+      backbone of the models predicition capabilities
+
+</font>
+
+Ngram Prediction Model: Prediction Algorithm
+========================================================
+<font size = "5">
+
+The prediction model used to construct this algorithm is Katz's Back-Off Model
+
+1. The model estimates the conditional probability of a word based on that words 
+history in the ngram.
+      - For our algorithm we have used quadgrams as the ngram.
+2. The estimation is done by backing-off to smaller ngram models under certain 
+conditions. For example if the input phrase does not explicitly appear in our 
+quadgram library.
+      - For our algorithm the model may back-off to trigrams and then bigrams if 
+necessary
+
+The R file library for this algorithm can be found on Github at this link:
+- [R Prediction Algorithm] (https://github.com/pulsar135/projrepo)
+
+</font>
+
+Ngram Prediction Shiny Application
+========================================================
+
+<font size = "5">
+
+- The app allows the user to input a word or phrase for which they would like 
+the next word
+- It then takes the input phrase and puts it through the prediction model and 
+returns the three words with the highest probabilities of being the next word 
+in the input phrase
+- An image of the app is below and the working app can be found at this link:
+      - [Ngram Predicition Shiny App] (https://pulsar135.shinyapps.io/projrepo/)
+
+</font>
+
+![](shinyappss.png)
