@@ -11,11 +11,13 @@ predictword <- function(phrase, r) {
       ng1 <- data.table(readRDS("1grams.RData"))
       ng2 <- data.table(readRDS("2grams.RData"))
       ng3 <- data.table(readRDS("3grams.RData"))
+      ng4 <- data.table(readRDS("4grams.RData"))
       
       #Set the discount values for bigrams and trigrams
       #Assumed as 0.5 for both for this project
-      g2 <- 0.25
+      g2 <- 0.5
       g3 <- 0.5
+      g4 <- 0.5
       
       #Create profanity filter
       homedir <- getwd()
@@ -46,49 +48,62 @@ predictword <- function(phrase, r) {
       phrase <- stripWhitespace(phrase)
       phrase <- str_trim(phrase)
       
-      
       #If phrase cleaning removes all words throw error, ask for new input
       if (identical(phrase, "")) {
             results <- "Clean Error"
       }
       
       else {
-      
+            
             #Split input phrase and reassemble with "_" between words and get the 
             #number (n) of words in the input phrase
             psplit <- unlist(strsplit(phrase, " "))
             n <- length(psplit)
-            sterms <- paste(psplit[n-1], psplit[n], sep = "_")
-        
+            sterms <- paste(psplit[n-2], psplit[n-1], psplit[n], sep = "_")
+            
             #Perform analysis using Katz Back-off Model (contained in kbo_model.R) 
-            #for trigrams to get prediction of the three highest probability words to
-            #complete the input phrase
-            obgram3 <- getobgram3(sterms, ng3)
-            probobgram3 <- getobgram3prob(obgram3, ng2, sterms, g3)
-            uogram3tails <- getuogram3tails(obgram3, ng1)
-            gram1 <- str_split(sterms, "_")[[1]][2]
+            #for quadgrams to get prediction of the three highest probability 
+            #words to complete the input phrase
+            obgram4 <- getobgram4(sterms, ng4)
+            probobgram4 <- getobgram4prob(obgram4, ng3, sterms, g4)
+            uogram4tails <- getuogram4tails(obgram4, ng1)
+            gram2 <- str_split(sterms, "_")[[1]][1:3]
+            gram2 <- ng2[(ng2$termsft %in% gram2[2] & ng2$pterm %in% gram2[3]), ]
+            alphagram3 <- getalphagram3(gram2, ng3, g3)
+            bogram3 <- getbogram3(sterms, uogram4tails)
+            obogram3 <- getobogram3(sterms, uogram4tails, ng3)
+            uobogram3 <- getuobogram3(sterms, uogram4tails, obogram3)
+            obogram3p <-getobogram3prob(obogram3, ng2, g3)
+            uobogram3p <- getuobogram3prob(uobogram3, ng1, alphagram3)
+            #gram3prob <- rbind(obogram3p, uobogram3p)
+            gram3prob <- obogram3p
+            gram3prob
+            
+            gram1 <- str_split(sterms, "_")[[1]][3]
             gram1 <- ng1[ng1$term == gram1,]
             alphagram2 <- getalphagram2(gram1, ng2, g2)
-            bogram2 <- getbogram2(sterms, uogram3tails)
-            obogram2 <- getobogram2(sterms, uogram3tails, ng2)
-            uobogram2 <- getuobogram2(sterms, uogram3tails, obogram2)
+            uogram4ubo3tails <- getuogram4ubo3tails(uogram4tails, obogram3)
+            bogram2 <- getbogram2(sterms, uogram4ubo3tails)
+            obogram2 <- getobogram2(sterms, uogram4ubo3tails, ng2)
+            uobogram2 <- getuobogram2(sterms, uogram4ubo3tails, obogram2)
             obogram2p <-getobogram2prob(obogram2, ng1, g2)
             uobogram2p <- getuobogram2prob(uobogram2, ng1, alphagram2)
             gram2prob <- rbind(obogram2p, uobogram2p)
             gram2prob
-            gram2 <- str_split(sterms, "_")[[1]][1:2]
-            gram2 <- ng2[(ng2$termsft %in% gram2[1] & ng2$pterm %in% gram2[2]), ]
-            alphagram3 <- getalphagram3(obgram3, gram2, g3)
-            uogram3p <- getuogram3prob(sterms, gram2prob, alphagram3)
+            
+            gram3 <- str_split(sterms, "_")[[1]][1:3]
+            gram3 <- c(paste(gram3[1], gram3[2], sep = "_"), gram3[3])
+            gram3 <- ng3[(ng3$termsft %in% gram3[1] & ng3$pterm %in% gram3[2]), ]
+            alphagram4 <- getalphagram4(obgram4, gram3, g4)
+            uogram4p <- getuogram4prob(sterms, gram2prob, gram3prob, alphagram4)
+            
             
             #Output from KBO summarized into data.table of results with 3 highest 
             #probability words
-            probgram3 <- rbind(probobgram3, uogram3p)
-            probgram3 <- as.data.table(probgram3 %>% arrange(desc(probgram3$prob)))
-            results <- data.table(pred = probgram3$pterm[1:3], 
-                                  prob = probgram3$prob[1:3])
+            probgram4 <- rbind(probobgram4, uogram4p)
+            probgram4 <- as.data.table(probgram4 %>% arrange(desc(probgram4$prob)))
+            results <- data.table(pred = probgram4$pterm[1:3], 
+                                  prob = probgram4$prob[1:3])
             return(results)
       }
 }
-    
-    
